@@ -8,62 +8,413 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <style>
-  html, body {
-    margin: 0;
-    height: 100%;
-    background: #122a54;
-    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    color: #ffffff;
-  }
-  .wrap {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 24px;
-    box-sizing: border-box;
-  }
-  img { width: 88px; height: 88px; border-radius: 18px; margin-bottom: 20px; }
-  p { opacity: 0.85; margin: 6px 0 22px; }
-  a.btn {
-    display: inline-block;
-    background: #ffffff;
-    color: #122a54;
-    text-decoration: none;
-    font-weight: 600;
-    padding: 12px 22px;
-    border-radius: 10px;
-  }
+  :root { --bs-primary: #3B6D11; --bs-primary-rgb: 59, 109, 17; }
+  body { background: #F1EFE8; padding: 24px 12px; }
+  .card { max-width: 480px; margin: 0 auto; border: none; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .btn-primary { background-color: #3B6D11; border-color: #3B6D11; }
+  .btn-primary:hover, .btn-primary:focus { background-color: #2C5309; border-color: #2C5309; }
+  .btn-outline-primary { color: #3B6D11; border-color: #3B6D11; }
+  .btn-outline-primary:hover { background-color: #3B6D11; border-color: #3B6D11; color: #fff; }
+  .campo-bloqueado { background-color: #F1EFE8; }
+  #historial { max-height: 220px; overflow-y: auto; }
+  .historial-item:not(:last-child) { border-bottom: 1px solid #E5E3DC; }
+  .oculto { display: none !important; }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <img src="icon-192.png" alt="Novedades Fátima">
-    <p>Abriendo Novedades Fátima…</p>
-    <a class="btn" href="https://script.google.com/macros/s/AKfycbx9BaOgR6eO_3fFUKaMV_MhokAB5jY0rD6BduSDcefdzttoDfAinkf-Ded_R7BDDMpW/exec" id="fallback">
-      Si no se abre solo, tocá acá
-    </a>
+
+<div class="card p-4 mb-3">
+  <h4 class="mb-3">Novedades - Colegio Fátima</h4>
+
+  <!-- Paso 1: login por sección -->
+  <div id="pantalla-login">
+    <form id="form-login" novalidate>
+      <div class="mb-3">
+        <label class="form-label" for="seccion">Sección</label>
+        <select class="form-select" id="seccion" required>
+          <option value="" selected disabled>Elegí tu sección…</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="password">Contraseña de la sección</label>
+        <input type="password" class="form-control" id="password" required>
+      </div>
+      <div id="error-login" class="alert alert-danger py-2 oculto"></div>
+      <button type="submit" class="btn btn-primary w-100" id="btn-login">Entrar</button>
+    </form>
   </div>
 
+  <!-- Paso 2: nombre de quien carga -->
+  <div id="pantalla-nombre" class="oculto">
+    <form id="form-nombre" novalidate>
+      <div class="mb-3">
+        <label class="form-label" for="nombre">Tu nombre y apellido</label>
+        <input type="text" class="form-control" id="nombre" required autocomplete="name">
+        <div class="form-text">Queda registrado en cada novedad que cargues.</div>
+      </div>
+      <div class="mb-2 form-check">
+        <input type="checkbox" class="form-check-input" id="recordar-nombre" checked>
+        <label class="form-check-label" for="recordar-nombre">Recordar mi nombre en este dispositivo</label>
+      </div>
+      <div id="error-nombre" class="alert alert-danger py-2 oculto"></div>
+      <button type="submit" class="btn btn-primary w-100" id="btn-continuar">Continuar</button>
+    </form>
+  </div>
+
+  <!-- Paso 3: formulario -->
+  <div id="pantalla-formulario" class="oculto">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <span class="badge text-bg-light border" id="badge-seccion"></span>
+      <button type="button" class="btn btn-sm btn-link p-0" id="btn-cambiar-seccion">Cambiar de sección</button>
+    </div>
+
+    <div class="mb-3">
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" name="modo" id="modo-nuevo" value="nuevo" checked>
+        <label class="form-check-label" for="modo-nuevo">Caso nuevo</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" name="modo" id="modo-existente" value="existente">
+        <label class="form-check-label" for="modo-existente">Actualizar caso existente</label>
+      </div>
+    </div>
+
+    <div id="bloque-existente" class="mb-3 oculto">
+      <label class="form-label" for="idCaso">Caso</label>
+      <select class="form-select" id="idCaso"></select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label" for="alumnoCurso">Alumno / curso</label>
+      <input type="text" class="form-control" id="alumnoCurso">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label" for="tipo">Tipo de novedad</label>
+      <select class="form-select" id="tipo">
+        <option>Activación Protocolo</option>
+        <option>Docentes</option>
+        <option>Alumnos</option>
+        <option>Otros</option>
+      </select>
+    </div>
+
+    <div id="bloque-historial" class="mb-3 oculto">
+      <label class="form-label">Comentarios anteriores de este caso</label>
+      <div id="historial" class="border rounded p-2 bg-white small"></div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label" for="estado">Estado</label>
+      <select class="form-select" id="estado">
+        <option>Nuevo</option>
+        <option>En seguimiento</option>
+        <option>Cerrado</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label" for="descripcion">Descripción</label>
+      <textarea class="form-control" id="descripcion" rows="4"></textarea>
+    </div>
+
+    <div id="mensaje" class="alert oculto"></div>
+    <button type="button" class="btn btn-primary w-100" id="btn-guardar">Guardar</button>
+  </div>
+
+</div>
+
 <script>
-  var DESTINO = "https://script.google.com/macros/s/AKfycbx9BaOgR6eO_3fFUKaMV_MhokAB5jY0rD6BduSDcefdzttoDfAinkf-Ded_R7BDDMpW/exec";
+  // URL del deployment de Apps Script (repo novedades-fatima), que ahora actúa
+  // como API JSON pura — ya no sirve HTML, así que no depende de cookies de
+  // terceros ni de ningún login de Google. Si cambia la URL del deployment,
+  // actualizar esta constante.
+  var API_URL = "https://script.google.com/macros/s/AKfycbx9BaOgR6eO_3fFUKaMV_MhokAB5jY0rD6BduSDcefdzttoDfAinkf-Ded_R7BDDMpW/exec";
 
-  // Redirige apenas carga la página.
-  window.location.replace(DESTINO);
+  var LS_NOMBRE = 'novedades-fatima:nombre';
 
-  // Por si el navegador bloquea el replace inmediato, reintenta un momento después.
-  setTimeout(function () {
-    window.location.href = DESTINO;
-  }, 800);
+  // Estado de sesión en memoria: no se persiste al recargar la página (a propósito, por seguridad
+  // en equipos compartidos entre secciones). Si se recarga, hay que loguearse de nuevo.
+  let token = null;
+  let seccionActual = null;
+  let nombreActual = null;
+  let casosCargados = [];
 
-  // Service worker vacío: ayuda a que Chrome ofrezca "Instalar aplicación"
-  // en algunos dispositivos/versiones que todavía lo piden como requisito.
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("sw.js").catch(function () {});
+  function apiGet(action) {
+    return fetch(API_URL + '?action=' + encodeURIComponent(action)).then(function (r) { return r.json(); });
   }
+
+  function apiPost(action, params) {
+    const body = Object.assign({ action: action }, params || {});
+    return fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita preflight CORS
+      body: JSON.stringify(body)
+    }).then(function (r) { return r.json(); });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    apiGet('getSecciones').then(function (res) {
+      if (!res.ok) return;
+      const select = document.getElementById('seccion');
+      res.secciones.forEach(function (s) {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = s;
+        select.appendChild(opt);
+      });
+    });
+
+    try {
+      const guardado = localStorage.getItem(LS_NOMBRE);
+      if (guardado) document.getElementById('nombre').value = guardado;
+    } catch (e) { /* localStorage no disponible: sin problema, se pide a mano */ }
+
+    // Service worker vacío: ayuda a que Chrome ofrezca "Instalar aplicación"
+    // en algunos dispositivos/versiones que todavía lo piden como requisito.
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    }
+  });
+
+  document.getElementById('form-login').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const seccion = document.getElementById('seccion').value;
+    const password = document.getElementById('password').value;
+    const errorBox = document.getElementById('error-login');
+    const btn = document.getElementById('btn-login');
+
+    if (!seccion || !password) {
+      errorBox.textContent = 'Elegí tu sección y escribí la contraseña.';
+      errorBox.classList.remove('oculto');
+      return;
+    }
+
+    errorBox.classList.add('oculto');
+    btn.disabled = true;
+    btn.textContent = 'Entrando…';
+
+    apiPost('login', { seccion: seccion, password: password })
+      .then(function (res) {
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+        if (!res.ok) {
+          errorBox.textContent = res.error;
+          errorBox.classList.remove('oculto');
+          return;
+        }
+        token = res.token;
+        seccionActual = res.seccion;
+        document.getElementById('badge-seccion').textContent = seccionActual;
+        document.getElementById('password').value = '';
+        document.getElementById('pantalla-login').classList.add('oculto');
+        document.getElementById('pantalla-nombre').classList.remove('oculto');
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+        errorBox.textContent = 'Error al iniciar sesión: ' + err.message;
+        errorBox.classList.remove('oculto');
+      });
+  });
+
+  document.getElementById('form-nombre').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const nombre = document.getElementById('nombre').value.trim();
+    const errorBox = document.getElementById('error-nombre');
+
+    if (!nombre) {
+      errorBox.textContent = 'Escribí tu nombre y apellido.';
+      errorBox.classList.remove('oculto');
+      return;
+    }
+    errorBox.classList.add('oculto');
+
+    nombreActual = nombre;
+    try {
+      if (document.getElementById('recordar-nombre').checked) {
+        localStorage.setItem(LS_NOMBRE, nombre);
+      } else {
+        localStorage.removeItem(LS_NOMBRE);
+      }
+    } catch (err) { /* sin problema si el navegador bloquea localStorage */ }
+
+    document.getElementById('pantalla-nombre').classList.add('oculto');
+    document.getElementById('pantalla-formulario').classList.remove('oculto');
+    cargarCasosAbiertos();
+  });
+
+  document.getElementById('btn-cambiar-seccion').addEventListener('click', function () {
+    if (token) apiPost('cerrarSesion', { token: token });
+    token = null;
+    seccionActual = null;
+    document.getElementById('mensaje').classList.add('oculto');
+    document.getElementById('pantalla-formulario').classList.add('oculto');
+    document.getElementById('pantalla-nombre').classList.add('oculto');
+    document.getElementById('pantalla-login').classList.remove('oculto');
+  });
+
+  function cargarCasosAbiertos() {
+    apiPost('getCasosAbiertos', { token: token })
+      .then(function (res) {
+        if (!res.ok) return mostrarErrorSesion(res);
+        casosCargados = res.casos;
+        const select = document.getElementById('idCaso');
+        select.innerHTML = '';
+        casosCargados.forEach(function (c) {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = c.etiqueta;
+          select.appendChild(opt);
+        });
+        actualizarDatosDesdeCaso();
+      })
+      .catch(mostrarErrorSesion);
+  }
+
+  function actualizarDatosDesdeCaso() {
+    const idSeleccionado = document.getElementById('idCaso').value;
+    const caso = casosCargados.find(function (c) { return c.id === idSeleccionado; });
+    document.getElementById('alumnoCurso').value = caso ? caso.alumno : '';
+    if (caso) document.getElementById('tipo').value = caso.tipo;
+    if (idSeleccionado) cargarHistorial(idSeleccionado);
+    else document.getElementById('historial').innerHTML = '';
+  }
+
+  function cargarHistorial(idCaso) {
+    const contenedor = document.getElementById('historial');
+    contenedor.textContent = 'Cargando…';
+    apiPost('getHistorialCaso', { token: token, idCaso: idCaso })
+      .then(function (res) {
+        if (!res.ok) return mostrarErrorSesion(res);
+        contenedor.innerHTML = '';
+        if (res.historial.length === 0) {
+          contenedor.textContent = 'Sin comentarios anteriores.';
+          return;
+        }
+        res.historial.forEach(function (h) {
+          const item = document.createElement('div');
+          item.className = 'historial-item py-2';
+
+          const cabecera = document.createElement('div');
+          cabecera.className = 'd-flex justify-content-between text-muted';
+          const fecha = document.createElement('span');
+          fecha.textContent = h.fecha;
+          const estado = document.createElement('span');
+          estado.className = 'badge text-bg-light border';
+          estado.textContent = h.estado;
+          cabecera.appendChild(fecha);
+          cabecera.appendChild(estado);
+
+          const autor = document.createElement('div');
+          autor.className = 'text-muted mb-1';
+          autor.textContent = h.cargadoPor;
+
+          const desc = document.createElement('div');
+          desc.textContent = h.descripcion;
+
+          item.appendChild(cabecera);
+          item.appendChild(autor);
+          item.appendChild(desc);
+          contenedor.appendChild(item);
+        });
+      })
+      .catch(mostrarErrorSesion);
+  }
+
+  document.getElementById('idCaso').addEventListener('change', actualizarDatosDesdeCaso);
+
+  document.querySelectorAll('input[name="modo"]').forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      const esExistente = this.value === 'existente';
+      document.getElementById('bloque-existente').classList.toggle('oculto', !esExistente);
+      document.getElementById('bloque-historial').classList.toggle('oculto', !esExistente);
+
+      const campoAlumno = document.getElementById('alumnoCurso');
+      const campoTipo = document.getElementById('tipo');
+      campoAlumno.readOnly = esExistente;
+      campoTipo.disabled = esExistente;
+      campoAlumno.classList.toggle('campo-bloqueado', esExistente);
+      campoTipo.classList.toggle('campo-bloqueado', esExistente);
+
+      if (esExistente) {
+        actualizarDatosDesdeCaso();
+      } else {
+        campoAlumno.value = '';
+        document.getElementById('historial').innerHTML = '';
+      }
+    });
+  });
+
+  function mostrarErrorSesion(err) {
+    const mensaje = document.getElementById('mensaje');
+    mensaje.textContent = 'Error: ' + (err && err.error ? err.error : err.message);
+    mensaje.className = 'alert alert-danger';
+    mensaje.classList.remove('oculto');
+  }
+
+  document.getElementById('btn-guardar').addEventListener('click', function () {
+    const modo = document.querySelector('input[name="modo"]:checked').value;
+    const alumnoCurso = document.getElementById('alumnoCurso').value.trim();
+    const descripcion = document.getElementById('descripcion').value.trim();
+    const mensaje = document.getElementById('mensaje');
+    const btn = document.getElementById('btn-guardar');
+
+    if (modo === 'nuevo' && (!alumnoCurso || !descripcion)) {
+      mensaje.textContent = 'Completá alumno/curso y descripción antes de guardar.';
+      mensaje.className = 'alert alert-danger';
+      mensaje.classList.remove('oculto');
+      return;
+    }
+    if (modo === 'existente' && !document.getElementById('idCaso').value) {
+      mensaje.textContent = 'Elegí un caso.';
+      mensaje.className = 'alert alert-danger';
+      mensaje.classList.remove('oculto');
+      return;
+    }
+    if (modo === 'existente' && !descripcion) {
+      mensaje.textContent = 'Completá la descripción antes de guardar.';
+      mensaje.className = 'alert alert-danger';
+      mensaje.classList.remove('oculto');
+      return;
+    }
+
+    const datos = {
+      token: token,
+      esNuevo: modo === 'nuevo',
+      idCaso: modo === 'existente' ? document.getElementById('idCaso').value : null,
+      nombre: nombreActual,
+      alumnoCurso: alumnoCurso,
+      tipo: document.getElementById('tipo').value,
+      estado: document.getElementById('estado').value,
+      descripcion: descripcion
+    };
+
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+
+    apiPost('procesarFormulario', { datos: datos })
+      .then(function (res) {
+        btn.disabled = false;
+        btn.textContent = 'Guardar';
+        if (!res.ok) return mostrarErrorSesion(res);
+        mensaje.textContent = 'Guardado correctamente (caso ' + res.idCaso + ').';
+        mensaje.className = 'alert alert-success';
+        mensaje.classList.remove('oculto');
+        document.getElementById('descripcion').value = '';
+        if (modo === 'existente') cargarHistorial(document.getElementById('idCaso').value);
+        else cargarCasosAbiertos();
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = 'Guardar';
+        mensaje.textContent = 'Error al guardar: ' + err.message;
+        mensaje.className = 'alert alert-danger';
+        mensaje.classList.remove('oculto');
+      });
+  });
 </script>
 </body>
 </html>

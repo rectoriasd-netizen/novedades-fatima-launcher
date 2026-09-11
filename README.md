@@ -1,18 +1,23 @@
-# Novedades Fátima — Launcher
+# Novedades Fátima — Frontend
 
-Página estática que redirige a la webapp real de Apps Script
-(`novedades-fatima`) y permite instalarla como acceso directo/PWA
-en el celular, evitando el problema de algunos Android que
-interceptan los enlaces a `script.google.com` y los mandan
-(erróneamente) a la app de Google Drive.
+Página estática que es el formulario real de carga de novedades del Colegio
+Fátima, y que además se puede instalar como acceso directo/PWA en el celular.
 
-No contiene ningún dato de alumnos ni credenciales: solo redirige
-a la URL pública del deployment, que sigue protegida por el login
-de Google como siempre.
+Habla con el backend (`novedades-fatima`, Apps Script) por `fetch()` a su
+deployment, que expone una API JSON simple (login por sección, lectura de
+casos/historial, guardado). No hay HTML servido desde Apps Script: eso evita
+el problema de algunos Android/Chrome que bloquean cookies de terceros entre
+`script.google.com` y `*.googleusercontent.com`, y que antes hacía fallar la
+apertura de la app en algunos celulares (aparecía un error de "Google Drive"
+al intentar abrir la URL del `/exec`).
+
+No contiene ningún dato de alumnos ni credenciales en el código: la
+contraseña de sección viaja por POST en cada request y no queda guardada acá.
 
 ## Contenido
 
-- `index.html` — redirige de inmediato a la URL del `/exec` de Apps Script.
+- `index.html` — el formulario completo (login por sección, carga/actualización
+  de casos, historial). Llama a la API de Apps Script vía `fetch()`.
 - `manifest.json` — metadata de la PWA (nombre, ícono, modo standalone).
 - `sw.js` — service worker vacío, solo para habilitar la instalación en más navegadores.
 - `icon-192.png` / `icon-512.png` — íconos de la app.
@@ -26,11 +31,15 @@ de Google como siempre.
 
 ## Si cambia la URL del deployment de Apps Script
 
-Editar la constante `DESTINO` en `index.html` (aparece una sola vez)
-y el `href` del link de respaldo justo arriba en el mismo archivo.
+Editar la constante `API_URL` en `index.html` (aparece una sola vez, al
+principio del `<script>`).
 
 ## Instalar en el celular (para los directores)
 
-1. Abrir el link de GitHub Pages en Chrome.
+1. Abrir el link de GitHub Pages en Chrome (o el navegador que usen).
 2. Menú (⋮) → "Instalar aplicación" o "Agregar a pantalla de inicio".
-3. Queda un ícono propio; al tocarlo abre directo la app de Novedades.
+3. Queda un ícono propio; al tocarlo abre directo el formulario de Novedades.
+
+Quien ya tenía instalado el acceso directo de la versión anterior (la que
+solo redirigía al `/exec`) no necesita reinstalar nada: la URL de GitHub
+Pages no cambió, solo cambió qué sirve `index.html`.
