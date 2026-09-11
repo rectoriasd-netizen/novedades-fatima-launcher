@@ -67,7 +67,32 @@
   <div id="pantalla-formulario" class="oculto">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <span class="badge text-bg-light border" id="badge-seccion"></span>
-      <button type="button" class="btn btn-sm btn-link p-0" id="btn-cambiar-seccion">Cambiar de sección</button>
+      <div>
+        <button type="button" class="btn btn-sm btn-link p-0 me-2" id="btn-cambiar-password">Cambiar contraseña</button>
+        <button type="button" class="btn btn-sm btn-link p-0" id="btn-cambiar-seccion">Cambiar de sección</button>
+      </div>
+    </div>
+
+    <div id="panel-cambiar-password" class="card p-3 mb-3 bg-light oculto">
+      <h6 class="mb-3">Cambiar contraseña de la sección</h6>
+      <div class="mb-2">
+        <label class="form-label" for="password-actual">Contraseña actual</label>
+        <input type="password" class="form-control" id="password-actual">
+      </div>
+      <div class="mb-2">
+        <label class="form-label" for="password-nueva">Nueva contraseña</label>
+        <input type="password" class="form-control" id="password-nueva">
+      </div>
+      <div class="mb-2">
+        <label class="form-label" for="password-nueva-repetir">Repetir nueva contraseña</label>
+        <input type="password" class="form-control" id="password-nueva-repetir">
+      </div>
+      <div id="error-cambiar-password" class="alert alert-danger py-2 oculto"></div>
+      <div id="ok-cambiar-password" class="alert alert-success py-2 oculto"></div>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-primary flex-fill" id="btn-guardar-password">Guardar</button>
+        <button type="button" class="btn btn-outline-secondary flex-fill" id="btn-cancelar-password">Cancelar</button>
+      </div>
     </div>
 
     <div class="mb-3">
@@ -251,9 +276,70 @@
     token = null;
     seccionActual = null;
     document.getElementById('mensaje').classList.add('oculto');
+    document.getElementById('panel-cambiar-password').classList.add('oculto');
     document.getElementById('pantalla-formulario').classList.add('oculto');
     document.getElementById('pantalla-nombre').classList.add('oculto');
     document.getElementById('pantalla-login').classList.remove('oculto');
+  });
+
+  document.getElementById('btn-cambiar-password').addEventListener('click', function () {
+    document.getElementById('error-cambiar-password').classList.add('oculto');
+    document.getElementById('ok-cambiar-password').classList.add('oculto');
+    document.getElementById('password-actual').value = '';
+    document.getElementById('password-nueva').value = '';
+    document.getElementById('password-nueva-repetir').value = '';
+    document.getElementById('panel-cambiar-password').classList.remove('oculto');
+  });
+
+  document.getElementById('btn-cancelar-password').addEventListener('click', function () {
+    document.getElementById('panel-cambiar-password').classList.add('oculto');
+  });
+
+  document.getElementById('btn-guardar-password').addEventListener('click', function () {
+    const actual = document.getElementById('password-actual').value;
+    const nueva = document.getElementById('password-nueva').value;
+    const repetir = document.getElementById('password-nueva-repetir').value;
+    const errorBox = document.getElementById('error-cambiar-password');
+    const okBox = document.getElementById('ok-cambiar-password');
+    const btn = document.getElementById('btn-guardar-password');
+    okBox.classList.add('oculto');
+
+    if (!actual || !nueva || !repetir) {
+      errorBox.textContent = 'Completá los tres campos.';
+      errorBox.classList.remove('oculto');
+      return;
+    }
+    if (nueva !== repetir) {
+      errorBox.textContent = 'La nueva contraseña y su repetición no coinciden.';
+      errorBox.classList.remove('oculto');
+      return;
+    }
+
+    errorBox.classList.add('oculto');
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+
+    apiPost('cambiarPasswordSeccion', { token: token, passwordActual: actual, passwordNueva: nueva })
+      .then(function (res) {
+        btn.disabled = false;
+        btn.textContent = 'Guardar';
+        if (!res.ok) {
+          errorBox.textContent = res.error;
+          errorBox.classList.remove('oculto');
+          return;
+        }
+        document.getElementById('password-actual').value = '';
+        document.getElementById('password-nueva').value = '';
+        document.getElementById('password-nueva-repetir').value = '';
+        okBox.textContent = 'Contraseña actualizada correctamente.';
+        okBox.classList.remove('oculto');
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = 'Guardar';
+        errorBox.textContent = 'Error: ' + err.message;
+        errorBox.classList.remove('oculto');
+      });
   });
 
   function cargarCasosAbiertos() {
