@@ -181,16 +181,26 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    apiGet('getSecciones').then(function (res) {
-      if (!res.ok) return;
-      const select = document.getElementById('seccion');
-      res.secciones.forEach(function (s) {
-        const opt = document.createElement('option');
-        opt.value = s;
-        opt.textContent = s;
-        select.appendChild(opt);
+    const errorBox = document.getElementById('error-login');
+    apiGet('getSecciones')
+      .then(function (res) {
+        if (!res.ok) {
+          errorBox.textContent = 'No se pudieron cargar las secciones: ' + res.error;
+          errorBox.classList.remove('oculto');
+          return;
+        }
+        const select = document.getElementById('seccion');
+        res.secciones.forEach(function (s) {
+          const opt = document.createElement('option');
+          opt.value = s;
+          opt.textContent = s;
+          select.appendChild(opt);
+        });
+      })
+      .catch(function (err) {
+        errorBox.textContent = 'No se pudieron cargar las secciones (' + err.message + '). Probá recargar la página.';
+        errorBox.classList.remove('oculto');
       });
-    });
 
     try {
       const guardado = localStorage.getItem(LS_NOMBRE);
